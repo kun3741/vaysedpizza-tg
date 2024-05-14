@@ -1,24 +1,23 @@
 {
   "name": "prudbay-pizza",
   "version": "1.0.0",
-  "description": "Telegram-bot \"Prudbay Pizza\", which helps you order some good food",
+  "description": "Telegram-bot \"Vaysed Pizza\", which helps you order some good food",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kun3741/prudbaypizza-tg.git"
+    "url": "git+https://github.com/kun3741/vaysedpizza-tg.git"
   },
-  "author": "Prudbay Dev.",
+  "author": "Kun Vays",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kun3741/prudbaypizza-tg/issues"
+    "url": "https://github.com/kun3741/vaysedpizza-tg/issues"
   },
-  "homepage": "https://github.com/kun3741/prudbaypizza-tg#readme",
+  "homepage": "https://github.com/kun3741/vaysedpizza-tg#readme",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "mongodb": "6.5",
     "node-telegram-bot-api": "^0.64.0",
     "sqlite3": "^5.1.7",
     "telegram-bot-api": "^2.0.1"
