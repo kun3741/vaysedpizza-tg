@@ -1,8 +1,9 @@
 require('dotenv').config()
 const Bot = require('node-telegram-bot-api');
-const sqlite3 = require('sqlite3');
+const sqlite3 = require('sqlite3').verbose();
 
 const token = `${process.env.SECRET_KEY}`;
+
 const bot = new Bot(token, {
     polling: {
         interval: 300,
@@ -10,14 +11,13 @@ const bot = new Bot(token, {
     }
 });
 bot.on("polling_error", (err) => {
+    console.error(err);
     if (err && err.data && err.data.error && err.data.error.message) {
       console.log(err.data.error.message);
-    } else {
-      console.log('undefined comand or error');
     }
 });
 
-const db = new sqlite3.Database('vaysed_pizza.db', (err) => {
+const db = new sqlite3.Database('db.db', (err) => {
     if (err) {
       console.error(err.message);
     } else {
@@ -25,52 +25,59 @@ const db = new sqlite3.Database('vaysed_pizza.db', (err) => {
     }
   });
   
-  db.run(`
+db.serialize(() => {
+    db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY,
       username TEXT,
       address TEXT,
       phone_number TEXT
-    );
-  
+    );`);
+    db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY,
       user_id INTEGER,
-      pizza TEXT,
-      address TEXT,
-      phone_number TEXT,
-      recipient_name TEXT,
-      FOREIGN KEY (user_id) REFERENCES users (id)
-    );
-  `);
-  
-const orders = [];
-  
-  function storeOrder(msg, content) {
-    const chatId = msg.payload.chatId
-    if (!orders[chatId]) {
-      orders[chatId] = [];
+      pizza TEXT
+    );`); // ^ title or id of pizza
+    // db.run(`CREATE TABLE IF NOT EXISTS addresses(
+    //     id INTEGER PRIMARY KEY,
+    //     address TEXT
+    // )`)
+    db.run(`
+    CREATE TABLE IF NOT EXISTS pizzas (
+      id INTEGER PRIMARY KEY,
+      title TEXT,
+      composition TEXT,
+      price INTEGER
+    );`);
+    
+    db.run(`INSERT OR REPLACE INTO pizzas (id, title, composition, price) VALUES 
+    (1, 'Салямі', 'Соус пелаті, сир моцарела, салямі.', '189'),
+    (2, 'Гавайська', 'Соус пелаті, сир моцарела , помідор чері.', '180'),
+    (3, 'Маргарита', 'Соус пелаті, сир моцарела , помідор чері.', '180'),
+    (4, 'Цезаріо', 'Вершковий соус, авторський соус цезар, печене куряче філе, сир пармезан, салат айзберг, листя свіжого салату, перепелині яйця, помідор чері.', '205'),
+    (5, 'Мексиканська', 'Соус пелаті, сир моцарела, бекон, чорізо, болгарський перець, помідор чері, синя цибуля, соус спайсі, перець чилі.', '210'),
+    (6, 'Карбонара', 'Вершковий соус, бекон, сир пармезан, синя цибуля, яєчний жовток.', '195'),
+    (7, 'Морська', 'Соус вершковий, сир моцарела, філе лосося, креветки, каперси, мікс салату, крем сир, помідори чері свіжі, сир пармезан, соус унагі.', '285');
+    `);
+});
+
+const Cart = {
+    orders: {},
+    addOrder: function(userId, pizza) {
+        if (!this.orders[userId]) {
+            this.orders[userId] = [];
+        }
+        this.orders[userId].push(pizza);
+    },
+    clearOrder: function(userId) {
+        delete this.orders[userId];
+    },
+    getOrder: function(userId) {
+        return this.orders[userId];
     }
-    orders[chatId].push(content);
-  }
+};
   
-  function getOrder(msg) {
-    const chatId = msg.payload.chatId;
-    return orders[chatId];
-    console.log(chatId);
-  }
-  
-  function formatOrderText(order) {
-    let text = 'Ваше замовлення: \n';
-    if (order.length === 0) {
-      text = 'Кошик порожній, поверніться в меню щоб зробити замовлення.';
-    } else {
-      order.forEach((pizza, index) => {
-        text += `${index + 1}. ${pizza} \n`;
-      });
-    }
-    return text;
-  }
 
 function mainMenuKeyboard() {
     return {
@@ -117,28 +124,39 @@ bot.onText(/◀ · Назад до меню/, async (msg) => {
 });
 
 bot.onText(/😸 · Готові варіанти/, async (msg) => {
-    await bot.sendMessage(msg.chat.id, '😸 · Готові варіанти.', {
-        reply_markup: {
-            keyboard: [
-                ["📃 · Моє замовлення"],
-                ["◀ · Назад до меню"]
-            ],
-            resize_keyboard: true
-        }
+    await db.all("SELECT * FROM pizzas", async function (err, result) {
+        const menu = result.map((item) => ([{
+            text: item.title,
+            callback_data: item.title
+        }]))
+        console.log(menu)
+        await bot.sendMessage(msg.chat.id, '😸 · Готові варіанти.', {
+            reply_markup: {
+                keyboard: [
+                    ["📃 · Моє замовлення"],
+                    ["◀ · Назад до меню"]
+                ],
+                resize_keyboard: true
+            }
+        });
+        await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
+            reply_markup: {
+                inline_keyboard: menu
+                // [
+                //     [{ text: 'Салямі', callback_data: 'doneSalami' }, { text: 'Гавайська', callback_data: 'doneHavai' }],
+                //     [{ text: 'Цезаріо', callback_data: 'doneCezar' }, { text: 'Маргарита', callback_data: 'doneMargaret' }],
+                //     [{ text: 'Мексиканська', callback_data: 'doneMexic' }, { text: 'Карбонара', callback_data: 'doneCarbonara' }],
+                //     [{ text: 'Морська', callback_data: 'doneSea' }],
+                // ],
+            }
+        });
     });
-    await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Салямі', callback_data: 'doneSalami' }, { text: 'Гавайська', callback_data: 'doneHavai' }],
-                [{ text: 'Цезаріо', callback_data: 'doneCezar' }, { text: 'Маргарита', callback_data: 'doneMargaret' }],
-                [{ text: 'Мексиканська', callback_data: 'doneMexic' }, { text: 'Карбонара', callback_data: 'doneCarbonara' }],
-                [{ text: 'Морська', callback_data: 'doneSea' }],
-            ],
-        }
-    });
+
+
 });
 
 bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
+    
     await bot.sendMessage(msg.chat.id, 'Ви повернулись до варіантів піци.', {
         reply_markup: {
             keyboard: [
@@ -148,16 +166,18 @@ bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
             resize_keyboard: true
         }
     });
+    await db.all("SELECT * FROM pizzas", async function (err, result) {
+        const menu = result.map((item) => ([{
+            text: item.title,
+            callback_data: item.title
+        }]))
+        await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
+            // get from DB
+            reply_markup: {
+                inline_keyboard: menu
 
-    await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Салямі', callback_data: 'doneSalami' }, { text: 'Гавайська', callback_data: 'doneHavai' }],
-                [{ text: 'Цезаріо', callback_data: 'doneCezar' }, { text: 'Маргарита', callback_data: 'doneMargaret' }],
-                [{ text: 'Мексиканська', callback_data: 'doneMexic' }, { text: 'Карбонара', callback_data: 'doneCarbonara' }],
-                [{ text: 'Морська', callback_data: 'doneSea' }],
-            ],
-        }
+            }
+        });
     });
 
 });
@@ -165,17 +185,6 @@ bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
 
 bot.on("callback_query", async (ctx) => {
 
-    const pizzas = [
-        { salami: 'Салямі', price: 189 },  
-        { havai: 'Гавайська', price: 190 },  
-        { kozak: 'Козацька', price: 150 },
-        { margaret: 'Маргарита', price: 180 },
-        { cezar: 'Цезаріо', price: 205 },  
-        { mexic: 'Мексиканська', price: 210 },  
-        { karbonara: 'Карбонара', price: 195 }, 
-        { sea: 'Морська', price: 285 }, 
-    ];
-    
     bot.onText("Замовити", async (msg) => {
         const orderText = formatOrderText(getOrder(msg));
             await bot.sendMessage(msg.chat.id, orderText, {
@@ -189,137 +198,164 @@ bot.on("callback_query", async (ctx) => {
             });
     });
 
+    db.get('SELECT * FROM pizzas WHERE title = ?', [ctx.data], async function (err, result) {
+        console.log('ONE ROW => ', result)
+    })
+
 
     switch (ctx.data) {
-        case "doneSalami":
-            const salamiPizza = pizzas.find(pizza => pizza.salami);
-            if (salamiPizza) {
-                const caption = `✌️ · ${salamiPizza.salami}. \nСклад: Соус пелаті, сир моцарела, салямі. \nЦіна: ${salamiPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/salami.webp', { caption,
-                    reply_markup: {
-                        keyboard: [
-                            ["Замовити Салямі"],
-                            ["◀️ · Назад до варіантів"],
-                            ["📃 · Моє замовлення"]
-                        ],
-                        resize_keyboard: true
-                    }, 
-                });
-            }
+        case "Салямі":
+                db.get('SELECT * FROM pizzas WHERE id = 1', async function(err, row) {
+                    if (row) {
+                        const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                        console.log(row.title)
+                        await bot.sendPhoto(ctx.message.chat.id, './img/salami.webp', { caption: pizza,
+                            reply_markup: {
+                                keyboard: [
+                                    ["Замовити Салямі"],
+                                    ["◀️ · Назад до варіантів"],
+                                    ["📃 · Моє замовлення"]
+                                ],
+                                resize_keyboard: true
+                            }, 
+                        });
+                    }
+                })
+                
             break;
 
-        case "doneHavai":
-            const havaiPizza = pizzas.find(pizza => pizza.havai);
-            if (havaiPizza) {
-                const caption = `✌️ · ${havaiPizza.havai}. \nСклад: Соус пелаті, сир моцарела, шинка, ананас. \nЦіна: ${havaiPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/havai.webp', { caption,
-                
-                    reply_markup: {
-                        keyboard: [
-                            [`Замовити ${havaiPizza.havai}`],
-                            ["◀️ · Назад до варіантів"]
-                        ],
-                        resize_keyboard: true
-                    }
-                });
-            }
+        case "Гавайська":
+            db.get('SELECT * FROM pizzas WHERE id = 2', async function(err, row) {
+                if (row) {
+                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                    console.log(row.title)
+                    await bot.sendPhoto(ctx.message.chat.id, './img/havai.webp', { caption: pizza,
+                        reply_markup: {
+                            keyboard: [
+                                ["Замовити Гавайська"],
+                                ["◀️ · Назад до варіантів"],
+                                ["📃 · Моє замовлення"]
+                            ],
+                            resize_keyboard: true
+                        }, 
+                    });
+                }
+            })
             break;
 
-        case "doneCezar":
-            const cezarPizza = pizzas.find(pizza => pizza.cezar);
-            if (cezarPizza) {
-                const caption = `✌️ · ${cezarPizza.cezar}.\nСклад: Вершковий соус, авторський соус цезар, печене куряче філе, сир пармезан, салат айзберг, листя свіжого салату, перепелині яйця, помідор чері. \nЦіна: ${cezarPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/Cezar.webp', { caption,
-                
-                    reply_markup: {
-                        keyboard: [
-                            [`Замовити ${cezarPizza.cezar}`],
-                            ["◀️ · Назад до варіантів"]
-                        ],
-                        resize_keyboard: true
-                    }
-                });
-            }
+        case "Цезаріо":
+            db.get('SELECT * FROM pizzas WHERE id = 4', async function(err, row) {
+                if (row) {
+                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                    console.log(row.title)
+                    await bot.sendPhoto(ctx.message.chat.id, './img/Cezar.webp', { caption: pizza,
+                        reply_markup: {
+                            keyboard: [
+                                ["Замовити Цезаріо"],
+                                ["◀️ · Назад до варіантів"],
+                                ["📃 · Моє замовлення"]
+                            ],
+                            resize_keyboard: true
+                        }, 
+                    });
+                }
+            })
         
             break;
 
-        case "doneMargaret":
-            const margaretPizza = pizzas.find(pizza => pizza.margaret);
-            if (margaretPizza) {
-                const caption = `✌️ · ${margaretPizza.margaret}.\nСклад: Соус пелаті, сир моцарела , помідор чері. \nЦіна: ${margaretPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/margaret.webp', { caption,
-                
-                    reply_markup: {
-                        keyboard: [
-                            [`Замовити ${margaretPizza.margaret}`],
-                            ["◀️ · Назад до варіантів"]
-                        ],
-                        resize_keyboard: true
-                    }
-                });
-            }
+        case "Маргарита":
+            db.get('SELECT * FROM pizzas WHERE id = 3', async function(err, row) {
+                if (row) {
+                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                    console.log(row.title)
+                    await bot.sendPhoto(ctx.message.chat.id, './img/margaret.webp', { caption: pizza,
+                        reply_markup: {
+                            keyboard: [
+                                ["Замовити Маргарита"],
+                                ["◀️ · Назад до варіантів"],
+                                ["📃 · Моє замовлення"]
+                            ],
+                            resize_keyboard: true
+                        }, 
+                    });
+                }
+            })
             break;
           
-        case "doneMexic":
-            const mexicPizza = pizzas.find(pizza => pizza.mexic);
-            if (mexicPizza) {
-                const caption = `✌️ · ${mexicPizza.mexic}.\nСоус пелаті, сир моцарела, бекон, чорізо, болгарський перець, помідор чері, синя цибуля, соус спайсі, перець чилі. \nЦіна: ${mexicPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/mexic.webp', { caption,
-                
-                    reply_markup: {
-                        keyboard: [
-                            [`Замовити ${mexicPizza.mexic}`],
-                            ["◀️ · Назад до варіантів"]
-                        ],
-                        resize_keyboard: true
-                    }
-                });
-            }
+        case "Мексиканська":
+            db.get('SELECT * FROM pizzas WHERE id = 5', async function(err, row) {
+                if (row) {
+                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                    console.log(row.title)
+                    await bot.sendPhoto(ctx.message.chat.id, './img/mexic.webp', { caption: pizza,
+                        reply_markup: {
+                            keyboard: [
+                                ["Замовити Мексиканська"],
+                                ["◀️ · Назад до варіантів"],
+                                ["📃 · Моє замовлення"]
+                            ],
+                            resize_keyboard: true
+                        }, 
+                    });
+                }
+            })
             break;
           
-        case "doneCarbonara":
-            const karbonaraPizza = pizzas.find(pizza => pizza.karbonara);
-            if (karbonaraPizza) {
-                const caption = `✌️ · ${karbonaraPizza.karbonara}.\nСклад: Вершковий соус, бекон, сир пармезан, синя цибуля, яєчний жовток. \nЦіна: ${karbonaraPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/karbonara.webp', { caption,
-                
-                    reply_markup: {
-                        keyboard: [
-                            [`Замовити ${karbonaraPizza.karbonara}`],
-                            ["◀️ · Назад до варіантів"]
-                        ],
-                        resize_keyboard: true
-                    }
-                });
-            }
+        case "Карбонара":
+            db.get('SELECT * FROM pizzas WHERE id = 6', async function(err, row) {
+                if (row) {
+                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                    console.log(row.title)
+                    await bot.sendPhoto(ctx.message.chat.id, './img/karbonara.webp', { caption: pizza,
+                        reply_markup: {
+                            keyboard: [
+                                ["Замовити Карбонара"],
+                                ["◀️ · Назад до варіантів"],
+                                ["📃 · Моє замовлення"]
+                            ],
+                            resize_keyboard: true
+                        }, 
+                    });
+                }
+            })
             break;
           
-        case "doneSea":
-            const seaPizza = pizzas.find(pizza => pizza.sea);
-            if (seaPizza) {
-                const caption = `✌️ · ${seaPizza.sea}.\nСоус вершковий, сир моцарела, філе лосося, криветки, каперси, мікс салату, крем сир, помідори чері свіжі, сир пармезан, соус унагі.  \nЦіна: ${seaPizza.price}грн`;
-                await bot.sendPhoto(ctx.message.chat.id, './img/vegan.jpg', { caption,
-                
-                    reply_markup: {
-                        keyboard: [
-                            [`Замовити ${seaPizza.sea}`],
-                            ["◀️ · Назад до варіантів"]
-                        ],
-                        resize_keyboard: true
-                    }
-                });
-            }
+        case "Морська":
+            db.get('SELECT * FROM pizzas WHERE id = 7', async function(err, row) {
+                if (row) {
+                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
+                    console.log(row.title)
+                    await bot.sendPhoto(ctx.message.chat.id, './img/sea.jpg', { caption: pizza,
+                        reply_markup: {
+                            keyboard: [
+                                ["Замовити Морська"],
+                                ["◀️ · Назад до варіантів"],
+                                ["📃 · Моє замовлення"]
+                            ],
+                            resize_keyboard: true
+                        }, 
+                    });
+                }
+            })
             break;
     
 
-    }
-});
+}})
+
+    bot.onText(`Замовити Салямі`, async (ctx) => {
+        Cart.addOrder(ctx.message.chat.id, salamiPizza); // Додайте цю піцу до замовлення користувача у кошику
+        await bot.sendMessage(ctx.message.chat.id, `Піца ${salamiPizza.salami} була додана до вашого кошика.`);
+        console.log('123') // Повідомте користувача, що піца була успішно додана до кошика
+    });
+
+
 
 
 
 
 bot.onText(/📃 · Моє замовлення/, async (msg) => {
-    bot.sendMessage(msg.chat.id, '1234')
+    console.log(msg.chat.id);
+    bot.sendMessage(msg.chat.id, '1234 sssss')
 });
 
 
