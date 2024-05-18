@@ -54,6 +54,14 @@ db.serialize(() => {
     );`);
 
     db.run(`
+    CREATE TABLE IF NOT EXISTS handmade (
+      id INTEGER PRIMARY KEY,
+      category TEXT,
+      title TEXT,
+      price INTEGER
+    );`);
+
+    db.run(`
     CREATE TABLE IF NOT EXISTS supplements (
       id INTEGER PRIMARY KEY,
       title TEXT,
@@ -80,6 +88,20 @@ db.serialize(() => {
     (7, 'Томатний сік (0,95 мл) | 75грн', '75'),
     (8, 'Банановий сік (0,95 мл) | 75грн', '75')
     `);
+
+    db.run(`INSERT OR REPLACE INTO handmade (id, category, title, price) VALUES 
+    (1, 'Соус', 'Томатний соус', 20),
+    (2, 'Соус', 'Вершковий соус', 25),
+    (3, 'М‛ясо', 'Салямі', 45),
+    (4, 'М‛ясо', 'Курка копчена', 50),
+    (5, 'М‛ясо', 'Шинка', 50),
+    (6, 'Сир', 'Сир твердий', 40),
+    (7, 'Сир', 'Пармезан', 60),
+    (8, 'Овочі', 'Помідор', 20),
+    (9, 'Овочі', 'Кукурудза', 20),
+    (10, 'Овочі', 'Цибуля', 15),
+    (11, 'Овочі', 'Перець', 30)
+    `);
 });
 
 
@@ -87,8 +109,7 @@ function mainMenuKeyboard() {
     return {
         keyboard: [
             ["🍕 · Меню"],
-            ["📃 · Моє замовлення"],
-            ['ℹ️ · Моя інформація', "📞 · Зворотній зв'язок"]
+            ["📃 · Моє замовлення"]
         ],
         resize_keyboard: true
     };
@@ -326,8 +347,6 @@ bot.on("callback_query", async (ctx) => {
 
 }})
 
-
-
 async function getPizzaPrice(pizzaTitle) {
     return new Promise((resolve, reject) => {
         db.get('SELECT price FROM pizzas WHERE title = ?', [pizzaTitle], (err, row) => {
@@ -344,7 +363,6 @@ async function getPizzaPrice(pizzaTitle) {
         });
     });
 }
-
 async function addToCart(userId, pizzaTitle) {
     const price = await getPizzaPrice(pizzaTitle);
     if (price === null) {
@@ -382,7 +400,6 @@ async function addToCart(userId, pizzaTitle) {
         });
     });
 }
-
 
 bot.onText(/Замовити (Салямі|Гавайська|Маргарита|Цезаріо|Мексиканська|Карбонара|Морська)/, async (msg, match) => {
     const pizzaTitle = match[1];
@@ -455,7 +472,6 @@ async function getSupplementPrice(supplementTitle) {
         });
     });
 }
-
 async function addSupplementToCart(userId, supplementTitle) {
     const price = await getSupplementPrice(supplementTitle);
     if (price === null) {
@@ -523,8 +539,6 @@ bot.onText(/🥤 · Додати додатки/, async (msg) => {
 
 
 const state = {};
-
-
 bot.onText(/🧺 · Замовити/, async (msg) => {
     const userId = msg.chat.id;
     const user = await new Promise((resolve, reject) => {
@@ -542,10 +556,7 @@ bot.onText(/🧺 · Замовити/, async (msg) => {
             }
             bot.sendMessage(userId, 'Оформлення замовлення.', {
                 reply_markup: {
-                    keyboard: [
-                        ["◀ · Назад до меню"]
-                    ],
-                    resize_keyboard: true
+                    remove_keyboard: true
                 }, 
             });
             bot.sendMessage(userId, `Вкажіть ваше ім'я.\nПриклад: Святослав`);
@@ -555,10 +566,7 @@ bot.onText(/🧺 · Замовити/, async (msg) => {
     } else {
         bot.sendMessage(userId, 'Оформлення замовлення.', {
             reply_markup: {
-                keyboard: [
-                    ["◀ · Назад до меню"]
-                ],
-                resize_keyboard: true
+                remove_keyboard: true
             }, 
         });
         bot.sendMessage(userId, `Ви вже зберегли адресу: ${user.address}. Бажаєте використати її для замовлення?`, {
@@ -629,37 +637,121 @@ bot.on('message', async (msg) => {
     }
 });
 
+const pizzaState = {};
+
+bot.onText(/🖌️ · Власна піца/, async (msg) => {
+    const userId = msg.chat.id;
+    pizzaState[userId] = { sauce: null, meat: null, cheese: null, veggies: [] };
+    bot.sendMessage(userId, "Оберіть соус:", {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Томатний соус', callback_data: '1' }],
+                [{ text: 'Вершковий соус', callback_data: '2' }]
+            ]
+        }
+    });
+});
+
+bot.on('callback_query', async (callbackQuery) => {
+    const userId = callbackQuery.message.chat.id;
+    const data = callbackQuery.data;
+
+    if (!pizzaState[userId]) return;
+
+    const addIngredientAndAskNext = (ingredientType, nextMessage, nextOptions) => {
+        const ingredientId = parseInt(data);
+        db.get('SELECT * FROM handmade WHERE id = ?', [ingredientId], (err, row) => {
+            if (err) {
+                console.error(`Error fetching ${ingredientType}:`, err);
+                return;
+            }
+            pizzaState[userId][ingredientType] = row;
+            bot.editMessageText(nextMessage, {
+                chat_id: userId,
+                message_id: callbackQuery.message.message_id,
+                reply_markup: {
+                    inline_keyboard: nextOptions
+                }
+            });
+        });
+    };
+
+    if (!pizzaState[userId].sauce) {
+        addIngredientAndAskNext('sauce', "Оберіть м'ясо:", [
+            [{ text: "Салямі", callback_data: '3' }],
+            [{ text: "Курка копчена", callback_data: '4' }],
+            [{ text: "Шинка", callback_data: '5' }]
+        ]);
+    } else if (!pizzaState[userId].meat) {
+        addIngredientAndAskNext('meat', "Оберіть сир:", [
+            [{ text: "Сир твердий", callback_data: '6' }],
+            [{ text: "Пармезан", callback_data: '7' }]
+        ]);
+    } else if (!pizzaState[userId].cheese) {
+        addIngredientAndAskNext('cheese', "Оберіть овочі:", [
+            [{ text: "Помідор", callback_data: '8' }],
+            [{ text: "Кукурудза", callback_data: '9' }],
+            [{ text: "Цибуля", callback_data: '10' }],
+            [{ text: "Перець", callback_data: '11' }],
+            [{ text: "Закінчити вибір овочів", callback_data: 'done_veggies' }]
+        ]);
+    } else if (data === 'done_veggies') {
+        const pizza = pizzaState[userId];
+        const basePrice = 60; 
+        const totalPrice = basePrice + pizza.sauce.price + pizza.meat.price + pizza.cheese.price + pizza.veggies.reduce((sum, veggie) => sum + veggie.price, 0);
+
+        let orderSummary = `Ваша піца:\n- Соус: ${pizza.sauce.title}\n- М'ясо: ${pizza.meat.title}\n- Сир: ${pizza.cheese.title}\n- Овочі:\n`;
+        pizza.veggies.forEach((veggie) => {
+            orderSummary += `  - ${veggie.title}\n`;
+        });
+        orderSummary += `Загальна вартість: ${totalPrice} грн`;
+
+        bot.editMessageText(orderSummary, {
+            chat_id: userId,
+            message_id: callbackQuery.message.message_id
+        });
+
+  
+        const pizzaDescription = `${pizza.sauce.title}, ${pizza.meat.title}, ${pizza.cheese.title}, ${pizza.veggies.map(veggie => veggie.title).join(", ")}`;
 
 
+        db.run('INSERT INTO orders (user_id, pizza, total_price) VALUES (?, ?, ?)', [
+            userId,
+            pizzaDescription,
+            totalPrice
+        ], (err) => {
+            if (err) {
+                console.error('Error inserting order:', err);
+                return;
+            }
+            bot.sendMessage(userId, 'Ваше замовлення збережено!');
+        });
 
-// bot.onText(/📃 · Моє замовлення/, async (msg) => {
-//     console.log(msg.chat.id + " @" + msg.from.username);
+        delete pizzaState[userId];
+    } else {
+        db.get('SELECT * FROM handmade WHERE id = ?', [parseInt(data)], (err, row) => {
+            if (err) {
+                console.error('Error fetching veggie:', err);
+                return;
+            }
+            pizzaState[userId].veggies.push(row);
+            bot.editMessageText("Овоч додано. Оберіть ще овоч або натисніть 'Закінчити вибір овочів' коли завершите:", {
+                chat_id: userId,
+                message_id: callbackQuery.message.message_id,
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "Помідор", callback_data: '8' }],
+                        [{ text: "Кукурудза", callback_data: '9' }],
+                        [{ text: "Цибуля", callback_data: '10' }],
+                        [{ text: "Перець", callback_data: '11' }],
+                        [{ text: "Закінчити вибір овочів", callback_data: 'done_veggies' }]
+                    ]
+                }
+            });
+        });
+    }
+});
 
-//     db.all('SELECT DISTINCT pizza FROM orders WHERE user_id = ?', [msg.chat.id], async function (err, result) {
-//         if (result && result.length > 0) {
-//             const pizzas = result.map(row => row.pizza).join('\n');
-//             console.log('->', pizzas);
-//             bot.sendMessage(msg.chat.id, 'Ваше замовлення:\n' + pizzas)
-//         }
-//     });
-    
-
-// });
-
-
-// bot.onText(/ℹ️ · Моя інформація/, async (msg) => {
-//   await bot.sendMessage(msg.chat.id, `😎 · Інформація про користувача\nІм'я: 123`, {
-//     reply_markup: {
-//       inline_keyboard: [
-//         [{ text: "Змінити ім'я", callback_data: 'changeUsername' }, { text: 'Гавайська', callback_data: 'doneHavai' }],
-//         [{ text: 'Мисливська', callback_data: 'doneHunter' }, { text: 'Маргарита', callback_data: 'doneMargaret' }],
-//         [{ text: 'Барбекю', callback_data: 'doneBbq' }, { text: 'Карбонара', callback_data: 'doneCarbonara' }],
-//         [{ text: 'Вегетаріанська', callback_data: 'doneSea' }],
-//       ],
-
-//     }
-//   });
-// });
 
 
 
