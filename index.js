@@ -117,7 +117,7 @@ function mainMenuKeyboard() {
 
 bot.onText(/\/start/, async (msg) => {
     const photo = './img/start.png';
-    const caption = '✌️ · Вітаємо в Vaysed Pizza!\nХочеш свіженьку піцулю тут і зараз? Ти у правильному місці.\nВикористовуй меню внизу, щоб оформити замовлення.';
+    const caption = '✌️ · Вітаємо в Vaysed Pizza!\nХочете свіженьку піцулю тут і зараз? Ви у правильному місці.\nВикористовуйте меню внизу, щоб оформити замовлення.';
 
     await bot.sendPhoto(msg.chat.id, photo, {
         caption,
@@ -127,7 +127,7 @@ bot.onText(/\/start/, async (msg) => {
 
 bot.onText(/🍕 · Меню/, async (msg) => {
     const photo = './img/menu-footer.png';
-    const caption = '🍕 · Меню.\nВибирай яку піцу хочеш: власну чи готовий варіант?';
+    const caption = '🍕 · Меню.\nВибирайте яку піцу хочете: власну чи готовий варіант?';
 
     await bot.sendPhoto(msg.chat.id, photo, {
         caption,
@@ -164,7 +164,7 @@ bot.onText(/😸 · Готові варіанти/, async (msg) => {
                 resize_keyboard: true
             }
         });
-        await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
+        await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
             reply_markup: {
                 inline_keyboard: menu
             }
@@ -190,7 +190,7 @@ bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
             text: item.title,
             callback_data: item.title
         }]))
-        await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
+        await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
             // get from DB
             reply_markup: {
                 inline_keyboard: menu
@@ -219,8 +219,8 @@ bot.on("callback_query", async (ctx) => {
                             reply_markup: {
                                 keyboard: [
                                     ["Замовити Салямі"],
-                                    ["◀️ · Назад до варіантів"],
-                                    ["📃 · Моє замовлення"]
+                                    ["📃 · Моє замовлення"],
+                                    ["◀️ · Назад до варіантів"]
                                 ],
                                 resize_keyboard: true
                             }, 
@@ -238,8 +238,8 @@ bot.on("callback_query", async (ctx) => {
                         reply_markup: {
                             keyboard: [
                                 ["Замовити Гавайська"],
-                                ["◀️ · Назад до варіантів"],
-                                ["📃 · Моє замовлення"]
+                                ["📃 · Моє замовлення"],
+                                ["◀️ · Назад до варіантів"]
                             ],
                             resize_keyboard: true
                         }, 
@@ -257,8 +257,8 @@ bot.on("callback_query", async (ctx) => {
                         reply_markup: {
                             keyboard: [
                                 ["Замовити Цезаріо"],
-                                ["◀️ · Назад до варіантів"],
-                                ["📃 · Моє замовлення"]
+                                ["📃 · Моє замовлення"],
+                                ["◀️ · Назад до варіантів"]
                             ],
                             resize_keyboard: true
                         }, 
@@ -277,8 +277,8 @@ bot.on("callback_query", async (ctx) => {
                         reply_markup: {
                             keyboard: [
                                 ["Замовити Маргарита"],
-                                ["◀️ · Назад до варіантів"],
-                                ["📃 · Моє замовлення"]
+                                ["📃 · Моє замовлення"],
+                                ["◀️ · Назад до варіантів"]
                             ],
                             resize_keyboard: true
                         }, 
@@ -296,8 +296,8 @@ bot.on("callback_query", async (ctx) => {
                         reply_markup: {
                             keyboard: [
                                 ["Замовити Мексиканська"],
-                                ["◀️ · Назад до варіантів"],
-                                ["📃 · Моє замовлення"]
+                                ["📃 · Моє замовлення"],
+                                ["◀️ · Назад до варіантів"]
                             ],
                             resize_keyboard: true
                         }, 
@@ -315,8 +315,8 @@ bot.on("callback_query", async (ctx) => {
                         reply_markup: {
                             keyboard: [
                                 ["Замовити Карбонара"],
-                                ["◀️ · Назад до варіантів"],
-                                ["📃 · Моє замовлення"]
+                                ["📃 · Моє замовлення"],
+                                ["◀️ · Назад до варіантів"]
                             ],
                             resize_keyboard: true
                         }, 
@@ -334,8 +334,8 @@ bot.on("callback_query", async (ctx) => {
                         reply_markup: {
                             keyboard: [
                                 ["Замовити Морська"],
-                                ["◀️ · Назад до варіантів"],
-                                ["📃 · Моє замовлення"]
+                                ["📃 · Моє замовлення"],
+                                ["◀️ · Назад до варіантів"]
                             ],
                             resize_keyboard: true
                         }, 
@@ -418,44 +418,64 @@ bot.onText(/📃 · Моє замовлення/, async (msg) => {
             await bot.sendMessage(msg.chat.id, 'Виникла помилка при отриманні вашого замовлення.', {
                 reply_markup: {
                     keyboard: [
-                        ["🥤 · Додати додатки"],
-                        ["🧺 · Замовити"],
-                        ["◀️ · Назад до варіантів"]
+                        ["🥤 · Додати додатки", "🛒 · Замовити", "🗑️ · Очистити"],
+                        ["◀ · Назад до меню"]                        
                     ],
                     resize_keyboard: true
-                }, 
+                },
             });
         } else {
-           if (row) {
+            if (row) {
                 const pizzas = row.pizza;
                 const supplements = row.supplements ? `\n\nДодатки:\n${row.supplements}` : '';
                 const totalPrice = row.total_price;
                 await bot.sendMessage(msg.chat.id, `Ваше замовлення:\n${pizzas}${supplements}\n\nЗагальна сума: ${totalPrice} грн`, {
                     reply_markup: {
                         keyboard: [
-                            ["🥤 · Додати додатки"],
-                            ["🧺 · Замовити"],
-                            ["◀️ · Назад до варіантів"]
+                            ["🥤 · Додати додатки", "🛒 · Замовити", "🗑️ · Очистити"],
+                            ["◀ · Назад до меню"]
                         ],
                         resize_keyboard: true
-                    }, 
+                    },
                 });
             } else {
                 await bot.sendMessage(msg.chat.id, 'Ваш кошик порожній.', {
                     reply_markup: {
                         keyboard: [
-                            ["🥤 · Додати додатки"],
-                            ["🧺 · Замовити"],
-                            ["◀️ · Назад до варіантів"]
+                            ["◀ · Назад до меню"]
                         ],
                         resize_keyboard: true
-                    }, 
+                    },
                 });
             }
         }
     });
 });
 
+bot.onText(/🗑️ · Очистити/, async (msg) => {
+    db.run('DELETE FROM orders WHERE user_id = ?', [msg.chat.id], async (err) => {
+        if (err) {
+            console.error('Error deleting order:', err);
+            await bot.sendMessage(msg.chat.id, 'Виникла помилка при очищенні вашого замовлення.', {
+                reply_markup: {
+                    keyboard: [
+                        ["◀ · Назад до меню"]
+                    ],
+                    resize_keyboard: true
+                },
+            });
+        } else {
+            await bot.sendMessage(msg.chat.id, 'Ваше замовлення було очищено.', {
+                reply_markup: {
+                    keyboard: [
+                        ["◀ · Назад до меню"]
+                    ],
+                    resize_keyboard: true
+                },
+            });
+        }
+    });
+});
 async function getSupplementPrice(supplementTitle) {
     return new Promise((resolve, reject) => {
         db.get('SELECT price FROM supplements WHERE title = ?', [supplementTitle], (err, row) => {
@@ -529,7 +549,7 @@ bot.onText(/🥤 · Додати додатки/, async (msg) => {
             text: item.title,
             callback_data: item.title
         }]));
-        await bot.sendMessage(msg.chat.id, 'Обирай нижче.', {
+        await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
             reply_markup: {
                 inline_keyboard: supplements
             }
@@ -539,7 +559,7 @@ bot.onText(/🥤 · Додати додатки/, async (msg) => {
 
 
 const state = {};
-bot.onText(/🧺 · Замовити/, async (msg) => {
+bot.onText(/🛒 · Замовити/, async (msg) => {
     const userId = msg.chat.id;
     const user = await new Promise((resolve, reject) => {
         db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, row) => {
@@ -554,29 +574,35 @@ bot.onText(/🧺 · Замовити/, async (msg) => {
                 console.error('Error inserting user:', err);
                 return;
             }
-            bot.sendMessage(userId, 'Оформлення замовлення.', {
+            bot.sendMessage(userId, '🥳 · Оформлення замовлення.', {
                 reply_markup: {
                     remove_keyboard: true
                 }, 
             });
-            bot.sendMessage(userId, `Вкажіть ваше ім'я.\nПриклад: Святослав`);
+            setTimeout(() => {
+                bot.sendMessage(userId, `Вкажіть ваше ім'я.\nПриклад: Святослав`);
+            }, 100);
         });
     } else if (user.status !== 'completed') {
-        bot.sendMessage(userId, `Продовжуємо збір даних. Вкажіть ваше ім'я.\nПриклад: Святослав`);
+        setTimeout(() => {
+            bot.sendMessage(userId, `Продовжуємо збір даних. Вкажіть ваше ім'я.\nПриклад: Святослав`);
+        }, 100);
     } else {
-        bot.sendMessage(userId, 'Оформлення замовлення.', {
+        bot.sendMessage(userId, '🥳 · Оформлення замовлення.', {
             reply_markup: {
                 remove_keyboard: true
             }, 
         });
-        bot.sendMessage(userId, `Ви вже зберегли адресу: ${user.address}. Бажаєте використати її для замовлення?`, {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'Так', callback_data: 'use_saved_address' }],
-                    [{ text: 'Ні', callback_data: 'update_address' }]
-                ]
-            }
-        });
+        setTimeout(() => {
+            bot.sendMessage(userId, `Ви вже зберегли адресу: ${user.address}. Бажаєте використати її для замовлення?`, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Так', callback_data: 'use_saved_address' }],
+                        [{ text: 'Ні', callback_data: 'update_address' }]
+                    ]
+                }
+            });
+        }, 100);
     }
 });
 
@@ -642,14 +668,24 @@ const pizzaState = {};
 bot.onText(/🖌️ · Власна піца/, async (msg) => {
     const userId = msg.chat.id;
     pizzaState[userId] = { sauce: null, meat: null, cheese: null, veggies: [] };
-    bot.sendMessage(userId, "Оберіть соус:", {
+    bot.sendPhoto(userId, './img/handmade.webp', { caption: "🖌️ · Створення власної піци.",
         reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Томатний соус', callback_data: '1' }],
-                [{ text: 'Вершковий соус', callback_data: '2' }]
-            ]
-        }
+            keyboard: [
+                ["◀ · Назад до меню"]
+            ],
+            resize_keyboard: true
+        }, 
     });
+    setTimeout(() => {
+        bot.sendMessage(userId, "Оберіть соус:", {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🥫️ Томатний соус | 20грн', callback_data: '1' }],
+                    [{ text: '🫙️ Вершковий соус | 20грн', callback_data: '2' }]
+                ]
+            }
+        });
+    }, 100);
 });
 
 bot.on('callback_query', async (callbackQuery) => {
@@ -666,6 +702,11 @@ bot.on('callback_query', async (callbackQuery) => {
                 return;
             }
             pizzaState[userId][ingredientType] = row;
+            bot.answerCallbackQuery(callbackQuery.id, {
+                text: `${row.title} додано`,
+                show_alert: false,
+            });
+
             bot.editMessageText(nextMessage, {
                 chat_id: userId,
                 message_id: callbackQuery.message.message_id,
@@ -678,21 +719,21 @@ bot.on('callback_query', async (callbackQuery) => {
 
     if (!pizzaState[userId].sauce) {
         addIngredientAndAskNext('sauce', "Оберіть м'ясо:", [
-            [{ text: "Салямі", callback_data: '3' }],
-            [{ text: "Курка копчена", callback_data: '4' }],
-            [{ text: "Шинка", callback_data: '5' }]
+            [{ text: "🔴 Салямі | 45грн", callback_data: '3' }],
+            [{ text: "🍗 Курка копчена | 50грн", callback_data: '4' }],
+            [{ text: "🍖 Шинка | 50грн", callback_data: '5' }]
         ]);
     } else if (!pizzaState[userId].meat) {
         addIngredientAndAskNext('meat', "Оберіть сир:", [
-            [{ text: "Сир твердий", callback_data: '6' }],
-            [{ text: "Пармезан", callback_data: '7' }]
+            [{ text: "🧀️ Сир твердий | 40грн", callback_data: '6' }],
+            [{ text: "🧀️ Пармезан | 60грн", callback_data: '7' }]
         ]);
     } else if (!pizzaState[userId].cheese) {
         addIngredientAndAskNext('cheese', "Оберіть овочі:", [
-            [{ text: "Помідор", callback_data: '8' }],
-            [{ text: "Кукурудза", callback_data: '9' }],
-            [{ text: "Цибуля", callback_data: '10' }],
-            [{ text: "Перець", callback_data: '11' }],
+            [{ text: "🍅 Помідор | 20грн", callback_data: '8' }],
+            [{ text: "🌽 Кукурудза | 20грн", callback_data: '9' }],
+            [{ text: "🧅 Цибуля | 15грн", callback_data: '10' }],
+            [{ text: "🫑 Перець | 30грн", callback_data: '11' }],
             [{ text: "Закінчити вибір овочів", callback_data: 'done_veggies' }]
         ]);
     } else if (data === 'done_veggies') {
@@ -711,23 +752,46 @@ bot.on('callback_query', async (callbackQuery) => {
             message_id: callbackQuery.message.message_id
         });
 
-  
-        const pizzaDescription = `${pizza.sauce.title}, ${pizza.meat.title}, ${pizza.cheese.title}, ${pizza.veggies.map(veggie => veggie.title).join(", ")}`;
+        const pizzaDescription = `\nВласна піца: ${pizza.sauce.title}, ${pizza.meat.title}, ${pizza.cheese.title}, ${pizza.veggies.map(veggie => veggie.title).join(", ")}`;
 
-
-        db.run('INSERT INTO orders (user_id, pizza, total_price) VALUES (?, ?, ?)', [
-            userId,
-            pizzaDescription,
-            totalPrice
-        ], (err) => {
+        db.get('SELECT * FROM orders WHERE user_id = ?', [userId], (err, row) => {
             if (err) {
-                console.error('Error inserting order:', err);
+                console.error('Error fetching order:', err);
                 return;
             }
-            bot.sendMessage(userId, 'Ваше замовлення збережено!');
-        });
 
-        delete pizzaState[userId];
+            if (row) {
+                const updatedPizzaList = row.pizza ? row.pizza + `\n${pizzaDescription}` : pizzaDescription;
+                const updatedTotalPrice = row.total_price ? row.total_price + totalPrice : totalPrice;
+
+                db.run('UPDATE orders SET pizza = ?, total_price = ? WHERE user_id = ?', [
+                    updatedPizzaList,
+                    updatedTotalPrice,
+                    userId
+                ], (err) => {
+                    if (err) {
+                        console.error('Error updating order:', err);
+                        return;
+                    }
+                    bot.sendMessage(userId, 'Ваше замовлення оновлено!');
+                });
+            } else {
+                // Insert new order
+                db.run('INSERT INTO orders (user_id, pizza, total_price) VALUES (?, ?, ?)', [
+                    userId,
+                    pizzaDescription,
+                    totalPrice
+                ], (err) => {
+                    if (err) {
+                        console.error('Error inserting order:', err);
+                        return;
+                    }
+                    bot.sendMessage(userId, 'Ваше замовлення збережено!');
+                });
+            }
+
+            delete pizzaState[userId];
+        });
     } else {
         db.get('SELECT * FROM handmade WHERE id = ?', [parseInt(data)], (err, row) => {
             if (err) {
@@ -735,15 +799,20 @@ bot.on('callback_query', async (callbackQuery) => {
                 return;
             }
             pizzaState[userId].veggies.push(row);
+
+            bot.answerCallbackQuery(callbackQuery.id, {
+                text: `${row.title} додано`,
+                show_alert: false,
+            });
             bot.editMessageText("Овоч додано. Оберіть ще овоч або натисніть 'Закінчити вибір овочів' коли завершите:", {
                 chat_id: userId,
                 message_id: callbackQuery.message.message_id,
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: "Помідор", callback_data: '8' }],
-                        [{ text: "Кукурудза", callback_data: '9' }],
-                        [{ text: "Цибуля", callback_data: '10' }],
-                        [{ text: "Перець", callback_data: '11' }],
+                        [{ text: "🍅 Помідор | 20грн", callback_data: '8' }],
+                        [{ text: "🌽 Кукурудза | 20грн", callback_data: '9' }],
+                        [{ text: "🧅 Цибуля | 15грн", callback_data: '10' }],
+                        [{ text: "🫑 Перець | 30грн", callback_data: '11' }],
                         [{ text: "Закінчити вибір овочів", callback_data: 'done_veggies' }]
                     ]
                 }
@@ -751,6 +820,7 @@ bot.on('callback_query', async (callbackQuery) => {
         });
     }
 });
+
 
 
 
