@@ -494,10 +494,6 @@ async function getSupplementPrice(supplementTitle) {
 }
 async function addSupplementToCart(userId, supplementTitle) {
     const price = await getSupplementPrice(supplementTitle);
-    if (price === null) {
-        throw new Error(`Price for supplement "${supplementTitle}" not found`);
-    }
-
     return new Promise((resolve, reject) => {
         db.get('SELECT id, supplements, total_price FROM orders WHERE user_id = ?', [userId], (err, row) => {
             if (err) {
