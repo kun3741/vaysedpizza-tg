@@ -6,6 +6,7 @@
 ![Screenshot](https://vaysed.trolling.today/gte9lyen.png)
 
 Bot mainally created as an exam project for King Danylo University, but, actually, can used for some other things. Writed with **JavaScript**, using NodeJS libary **node-telegram-bot-api**, and **sqlite3** for databases.
+
 Language - **Ukrainian. 🇺🇦** 
 
 Using this bot as a common user, you can choose what you want to order:
