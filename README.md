@@ -3,7 +3,7 @@
 
 **An interesting Telegram chat-bot for ordering pizza.**
 
-![Screenshot](https://vaysed.trolling.today/90jy3ng6.jpg =250x)
+![Screenshot](https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-Resize-eeDi12vvxOK54X.png)
 
 Bot mainally created as an exam project for King Danylo University, but, actually, can used for some other things. Writed with **JavaScript**, using NodeJS libary **node-telegram-bot-api**, and **sqlite3** for databases.
 
