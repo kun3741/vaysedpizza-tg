@@ -16,7 +16,7 @@ bot.on("polling_error", (err) => {
       console.log(err.data.error.message);
     }
 });
-
+``
 const db = new sqlite3.Database('db.db', (err) => {
     if (err) {
       console.error(err.message);
@@ -110,7 +110,7 @@ function mainMenuKeyboard() {
     return {
         keyboard: [
             ["🍕 · Меню"],
-            ["📃 · Моє замовлення"]
+            ["📃 · Моє замовлення", "📞 · Зворотній зв'язок"]
         ],
         resize_keyboard: true
     };
@@ -149,13 +149,70 @@ bot.onText(/◀ · Назад до меню/, async (msg) => {
     });
 });
 
+
+const userIDs = [1473999790];
+bot.onText(/📞 · Зворотній зв'язок/, (msg) => {
+    bot.sendMessage(msg.chat.id, 'Будь ласка, введіть свій номер телефону для зворотнього дзвінка:\n(формат: +380XXXXXXXXX)', {
+        reply_markup: {
+            keyboard: [
+                ["◀ · Назад до меню"]
+            ],
+            resize_keyboard: true
+        },
+    });
+
+    const validatePhoneNumber = (phoneNumber) => {
+        const regex = /^\+380\d{9}$/;
+        return regex.test(phoneNumber);
+    };
+
+    const askForPhoneNumber = () => {
+        bot.once('message', (responseMsg) => {
+            if (responseMsg.chat.id === msg.chat.id && responseMsg.text) {
+                const phoneNumber = responseMsg.text;
+                if (validatePhoneNumber(phoneNumber)) {
+                    userIDs.forEach(userID => {
+                        bot.sendMessage(userID, `❗ · УВАГА!\nНадійшов запит зворотнього зв'язку.\nКористувач: @${msg.from.username}\nНомер телефону: ${phoneNumber}`);
+                    });
+
+                    bot.sendMessage(msg.chat.id, '✅ · Ваш номер телефону успішно надіслано!\nОчікуйте дзвінка від менеджера протягом 5хв.', {
+                        reply_markup: {
+                            keyboard: [
+                                ["◀ · Назад до меню"]
+                            ],
+                            resize_keyboard: true
+                        }
+                    });
+                } else {
+                    bot.sendMessage(msg.chat.id, '❌ · Введено неправильний номер телефону.\nБудь ласка, введіть номер у форматі +380XXXXXXXXX:', {
+                        reply_markup: {
+                            keyboard: [
+                                ["◀ · Назад до меню"]
+                            ],
+                            resize_keyboard: true
+                        }
+                    });
+                    askForPhoneNumber();
+                }
+            }
+        });
+    };
+
+    askForPhoneNumber();
+});
+
+
 bot.onText(/😸 · Готові варіанти/, async (msg) => {
     await db.all("SELECT * FROM pizzas", async function (err, result) {
+        if (err) {
+            console.error('Error fetching pizzas:', err);
+            return;
+        }
         const menu = result.map((item) => ([{
             text: item.title,
             callback_data: item.title
-        }]))
-        console.log(menu)
+        }]));
+
         await bot.sendMessage(msg.chat.id, '😸 · Готові варіанти.', {
             reply_markup: {
                 keyboard: [
@@ -167,16 +224,13 @@ bot.onText(/😸 · Готові варіанти/, async (msg) => {
         });
         await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
             reply_markup: {
-                inline_keyboard: menu
+                inline_keyboard: menu 
             }
         });
     });
-
-
 });
 
 bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
-    
     await bot.sendMessage(msg.chat.id, 'Ви повернулись до варіантів піци.', {
         reply_markup: {
             keyboard: [
@@ -186,21 +240,24 @@ bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
             resize_keyboard: true
         }
     });
+
     await db.all("SELECT * FROM pizzas", async function (err, result) {
+        if (err) {
+            console.error('Error fetching pizzas:', err);
+            return;
+        }
         const menu = result.map((item) => ([{
             text: item.title,
             callback_data: item.title
-        }]))
+        }]));
+
         await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
             reply_markup: {
-                inline_keyboard: menu
-
+                inline_keyboard: menu 
             }
         });
     });
-
 });
-
 
 bot.on("callback_query", async (ctx) => {
     const data = ctx.data;
@@ -257,6 +314,19 @@ async function getPizzaPrice(pizzaTitle) {
     });
 }
 
+async function getOrder(userId) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT pizza, supplements, total_price FROM orders WHERE user_id = ?', [userId], (err, row) => {
+            if (err) {
+                console.error('Error fetching order:', err);
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
 async function addToCart(userId, pizzaTitle, supplements = '') {
     const price = await getPizzaPrice(pizzaTitle);
     if (price === null) {
@@ -266,17 +336,36 @@ async function addToCart(userId, pizzaTitle, supplements = '') {
     const date = new Date();
     const formattedDate = date.toISOString().replace('T', ' ').substring(0, 19);
 
+    const order = await getOrder(userId);
+
     return new Promise((resolve, reject) => {
-        db.run('INSERT INTO orders (user_id, pizza, supplements, total_price, order_date) VALUES (?, ?, ?, ?, ?)', 
-               [userId, pizzaTitle, supplements, price, formattedDate], 
-               function(err) {
-            if (err) {
-                console.error('Error adding to cart:', err);
-                reject(err);
-            } else {
-                resolve(this.lastID); 
+        if (order) {
+            let updatedPizzaList = pizzaTitle;
+            if (order.pizza) {
+                updatedPizzaList = pizzaTitle + '\n' + order.pizza;
             }
-        });
+            const updatedTotalPrice = order.total_price + price;
+            db.run('UPDATE orders SET pizza = ?, total_price = ?, order_date = ? WHERE user_id = ?', 
+                [updatedPizzaList, updatedTotalPrice, formattedDate, userId], (err) => {
+                    if (err) {
+                        console.error('Error updating order:', err);
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+        } else {
+            db.run('INSERT INTO orders (user_id, pizza, supplements, total_price, order_date) VALUES (?, ?, ?, ?, ?)', 
+                [userId, pizzaTitle, supplements, price, formattedDate], 
+                (err) => {
+                    if (err) {
+                        console.error('Error adding to cart:', err);
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+        }
     });
 }
 
@@ -526,6 +615,11 @@ bot.on('message', async (msg) => {
     });
 
     if (!user || !user.status) return;
+    
+    const validatePhoneNumber = (phoneNumber) => {
+        const regex = /^\+380\d{9}$/;
+        return regex.test(phoneNumber);
+    };
 
     if (user.status === 'awaiting_name') {
         db.run('UPDATE users SET name = ?, status = ? WHERE user_id = ?', [text, 'awaiting_phone', userId], (err) => {
@@ -536,13 +630,17 @@ bot.on('message', async (msg) => {
             bot.sendMessage(userId, 'Вкажіть ваш номер телефону:\nПриклад: +380987654321');
         });
     } else if (user.status === 'awaiting_phone') {
-        db.run('UPDATE users SET phone_number = ?, status = ? WHERE user_id = ?', [text, 'awaiting_address', userId], (err) => {
-            if (err) {
-                console.error('Error updating user phone number:', err);
-                return;
-            }
-            bot.sendMessage(userId, 'Вкажіть вашу адресу:\nПриклад:м. Івано-Франківськ, вул. Хороша, буд. 7, кв. 1');
-        });
+        if (validatePhoneNumber(text)) {
+            db.run('UPDATE users SET phone_number = ?, status = ? WHERE user_id = ?', [text, 'awaiting_address', userId], (err) => {
+                if (err) {
+                    console.error('Error updating user phone number:', err);
+                    return;
+                }
+                bot.sendMessage(userId, 'Вкажіть вашу адресу:\nПриклад: м. Івано-Франківськ, вул. Хороша, буд. 7, кв. 1');
+            });
+        } else {
+            bot.sendMessage(userId, '❌ Неправильний формат номера телефону. Вкажіть ваш номер телефону у форматі +380XXXXXXXXX:');
+        }
     } else if (user.status === 'awaiting_address') {
         db.run('UPDATE users SET address = ?, status = ? WHERE user_id = ?', [text, 'completed', userId], (err) => {
             if (err) {
@@ -576,7 +674,7 @@ bot.onText(/🖌️ · Власна піца/, async (msg) => {
                 ]
             }
         });
-    }, 200);
+    }, 300);
 });
 
 bot.on('callback_query', async (callbackQuery) => {
