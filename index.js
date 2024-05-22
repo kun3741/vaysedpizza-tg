@@ -40,6 +40,7 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY,
       user_id INTEGER,
+      order_date TEXT,
       pizza TEXT,
       supplements TEXT,
       total_price INTEGER
@@ -256,43 +257,29 @@ async function getPizzaPrice(pizzaTitle) {
     });
 }
 
-async function addToCart(userId, pizzaTitle) {
+async function addToCart(userId, pizzaTitle, supplements = '') {
     const price = await getPizzaPrice(pizzaTitle);
     if (price === null) {
         throw new Error(`Price for pizza "${pizzaTitle}" not found`);
     }
 
+    const date = new Date();
+    const formattedDate = date.toISOString().replace('T', ' ').substring(0, 19);
+
     return new Promise((resolve, reject) => {
-        db.get('SELECT id, pizza, total_price FROM orders WHERE user_id = ?', [userId], (err, row) => {
+        db.run('INSERT INTO orders (user_id, pizza, supplements, total_price, order_date) VALUES (?, ?, ?, ?, ?)', 
+               [userId, pizzaTitle, supplements, price, formattedDate], 
+               function(err) {
             if (err) {
-                console.error('Error fetching order:', err);
+                console.error('Error adding to cart:', err);
                 reject(err);
             } else {
-                if (row) {
-                    const updatedPizzaList = row.pizza + `\n${pizzaTitle}`;
-                    const updatedTotalPrice = row.total_price + price;
-                    db.run('UPDATE orders SET pizza = ?, total_price = ? WHERE id = ?', [updatedPizzaList, updatedTotalPrice, row.id], (updateErr) => {
-                        if (updateErr) {
-                            console.error('Error updating order:', updateErr);
-                            reject(updateErr);
-                        } else {
-                            resolve();
-                        }
-                    });
-                } else {
-                    db.run('INSERT INTO orders (user_id, pizza, total_price) VALUES (?, ?, ?)', [userId, pizzaTitle, price], (insertErr) => {
-                        if (insertErr) {
-                            console.error('Error inserting new order:', insertErr);
-                            reject(insertErr);
-                        } else {
-                            resolve();
-                        }
-                    });
-                }
+                resolve(this.lastID); 
             }
         });
     });
 }
+
 bot.onText(/Замовити (Салямі|Гавайська|Маргарита|Цезаріо|Мексиканська|Карбонара|Морська)/, async (msg, match) => {
     const pizzaTitle = match[1];
     try {
