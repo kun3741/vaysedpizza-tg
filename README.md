@@ -56,7 +56,7 @@ Go to the project directory
 
 Install dependencies
 ```bash
-  npm install package.json
+  npm install
 ```
 
 Start the bot
