@@ -71,11 +71,5 @@ To run this project, you will need to create and add `SECRET_KEY` environment va
 You can find information about how to get this key, which names **token**, [here](https://core.telegram.org/bots/tutorial).
 
 
-
-## 👤 About developer
-**Project made first-year student of King Danylo University, specialization «121 - Software Engineering», Volodymyr Dedeliuk.**
-
-[![bio](https://img.shields.io/badge/Bio_Webpage-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://monke.party/kun)
-[![telegram](https://img.shields.io/badge/telegram-1DA1F2?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/kun3741)
-[![twitter](https://img.shields.io/badge/email-ffbf00?style=for-the-badge&logo=gmail&logoColor=black)](mailto:vaysed.dev@gmail.com/)
-
+## 👤 About developers
+**Project made first-year students of King Danylo University, specialization «121 - Software Engineering», Volodymyr Dedeliuk, Vasyl Humeniak, Maria Smalukh, Evgen Romanovych.**
