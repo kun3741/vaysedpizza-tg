@@ -191,7 +191,6 @@ bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
             callback_data: item.title
         }]))
         await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
-            // get from DB
             reply_markup: {
                 inline_keyboard: menu
 
@@ -203,149 +202,42 @@ bot.onText(/◀️ · Назад до варіантів/, async (msg) => {
 
 
 bot.on("callback_query", async (ctx) => {
+    const data = ctx.data;
+    db.get('SELECT * FROM pizzas WHERE title = ?', [data], async function (err, result) {
+        if (result) {
+            await handlePizzaSelection(ctx, data);
+        }
+    });
+});
 
-    db.get('SELECT * FROM pizzas WHERE title = ?', [ctx.data], async function (err, result) {
-        console.log('ONE ROW => ', result)
-    })
+async function handlePizzaSelection(ctx, pizzaTitle) {
+    const photoMap = {
+        "Салямі": './img/salami.webp',
+        "Гавайська": './img/havai.webp',
+        "Цезаріо": './img/Cezar.webp',
+        "Маргарита": './img/margaret.webp',
+        "Мексиканська": './img/mexic.webp',
+        "Карбонара": './img/karbonara.webp',
+        "Морська": './img/sea.jpg'
+    };
 
-
-    switch (ctx.data) {
-        case "Салямі":
-                db.get('SELECT * FROM pizzas WHERE id = 1', async function(err, row) {
-                    if (row) {
-                        const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                        console.log(row.title)
-                        await bot.sendPhoto(ctx.message.chat.id, './img/salami.webp', { caption: pizza,
-                            reply_markup: {
-                                keyboard: [
-                                    ["Замовити Салямі"],
-                                    ["📃 · Моє замовлення"],
-                                    ["◀️ · Назад до варіантів"]
-                                ],
-                                resize_keyboard: true
-                            }, 
-                        });
-                    }
-                })                   
-            break;
-
-        case "Гавайська":
-            db.get('SELECT * FROM pizzas WHERE id = 2', async function(err, row) {
-                if (row) {
-                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                    console.log(row.title)
-                    await bot.sendPhoto(ctx.message.chat.id, './img/havai.webp', { caption: pizza,
-                        reply_markup: {
-                            keyboard: [
-                                ["Замовити Гавайська"],
-                                ["📃 · Моє замовлення"],
-                                ["◀️ · Назад до варіантів"]
-                            ],
-                            resize_keyboard: true
-                        }, 
-                    });
+    db.get('SELECT * FROM pizzas WHERE title = ?', [pizzaTitle], async function(err, row) {
+        if (row) {
+            const pizza = `✌️ · ${row.title}\nСклад: ${row.composition}\nЦіна: ${row.price} грн`;
+            await bot.sendPhoto(ctx.message.chat.id, photoMap[pizzaTitle], {
+                caption: pizza,
+                reply_markup: {
+                    keyboard: [
+                        [`Замовити ${row.title}`],
+                        ["📃 · Моє замовлення"],
+                        ["◀️ · Назад до варіантів"]
+                    ],
+                    resize_keyboard: true
                 }
-            })
-            break;
-
-        case "Цезаріо":
-            db.get('SELECT * FROM pizzas WHERE id = 4', async function(err, row) {
-                if (row) {
-                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                    console.log(row.title)
-                    await bot.sendPhoto(ctx.message.chat.id, './img/Cezar.webp', { caption: pizza,
-                        reply_markup: {
-                            keyboard: [
-                                ["Замовити Цезаріо"],
-                                ["📃 · Моє замовлення"],
-                                ["◀️ · Назад до варіантів"]
-                            ],
-                            resize_keyboard: true
-                        }, 
-                    });
-                }
-            })
-        
-            break;
-
-        case "Маргарита":
-            db.get('SELECT * FROM pizzas WHERE id = 3', async function(err, row) {
-                if (row) {
-                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                    console.log(row.title)
-                    await bot.sendPhoto(ctx.message.chat.id, './img/margaret.webp', { caption: pizza,
-                        reply_markup: {
-                            keyboard: [
-                                ["Замовити Маргарита"],
-                                ["📃 · Моє замовлення"],
-                                ["◀️ · Назад до варіантів"]
-                            ],
-                            resize_keyboard: true
-                        }, 
-                    });
-                }
-            })
-            break;
-          
-        case "Мексиканська":
-            db.get('SELECT * FROM pizzas WHERE id = 5', async function(err, row) {
-                if (row) {
-                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                    console.log(row.title)
-                    await bot.sendPhoto(ctx.message.chat.id, './img/mexic.webp', { caption: pizza,
-                        reply_markup: {
-                            keyboard: [
-                                ["Замовити Мексиканська"],
-                                ["📃 · Моє замовлення"],
-                                ["◀️ · Назад до варіантів"]
-                            ],
-                            resize_keyboard: true
-                        }, 
-                    });
-                }
-            })
-            break;
-          
-        case "Карбонара":
-            db.get('SELECT * FROM pizzas WHERE id = 6', async function(err, row) {
-                if (row) {
-                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                    console.log(row.title)
-                    await bot.sendPhoto(ctx.message.chat.id, './img/karbonara.webp', { caption: pizza,
-                        reply_markup: {
-                            keyboard: [
-                                ["Замовити Карбонара"],
-                                ["📃 · Моє замовлення"],
-                                ["◀️ · Назад до варіантів"]
-                            ],
-                            resize_keyboard: true
-                        }, 
-                    });
-                }
-            })
-            break;
-          
-        case "Морська":
-            db.get('SELECT * FROM pizzas WHERE id = 7', async function(err, row) {
-                if (row) {
-                    const pizza = '✌️ · ' + row.title + '\nСклад: ' + row.composition + '\nЦіна: ' + row.price + 'грн'
-                    console.log(row.title)
-                    await bot.sendPhoto(ctx.message.chat.id, './img/sea.jpg', { caption: pizza,
-                        reply_markup: {
-                            keyboard: [
-                                ["Замовити Морська"],
-                                ["📃 · Моє замовлення"],
-                                ["◀️ · Назад до варіантів"]
-                            ],
-                            resize_keyboard: true
-                        }, 
-                    });
-                }
-            })
-            break;
-    
-
-}})
+            });
+        }
+    });
+}
 
 async function getPizzaPrice(pizzaTitle) {
     return new Promise((resolve, reject) => {
@@ -363,6 +255,7 @@ async function getPizzaPrice(pizzaTitle) {
         });
     });
 }
+
 async function addToCart(userId, pizzaTitle) {
     const price = await getPizzaPrice(pizzaTitle);
     if (price === null) {
@@ -400,7 +293,6 @@ async function addToCart(userId, pizzaTitle) {
         });
     });
 }
-
 bot.onText(/Замовити (Салямі|Гавайська|Маргарита|Цезаріо|Мексиканська|Карбонара|Морська)/, async (msg, match) => {
     const pizzaTitle = match[1];
     try {
@@ -476,6 +368,8 @@ bot.onText(/🗑️ · Очистити/, async (msg) => {
         }
     });
 });
+
+
 async function getSupplementPrice(supplementTitle) {
     return new Promise((resolve, reject) => {
         db.get('SELECT price FROM supplements WHERE title = ?', [supplementTitle], (err, row) => {
@@ -492,8 +386,13 @@ async function getSupplementPrice(supplementTitle) {
         });
     });
 }
+
 async function addSupplementToCart(userId, supplementTitle) {
     const price = await getSupplementPrice(supplementTitle);
+    if (price === null) {
+        throw new Error(`Price for supplement "${supplementTitle}" not found`);
+    }
+
     return new Promise((resolve, reject) => {
         db.get('SELECT id, supplements, total_price FROM orders WHERE user_id = ?', [userId], (err, row) => {
             if (err) {
@@ -503,7 +402,8 @@ async function addSupplementToCart(userId, supplementTitle) {
                 if (row) {
                     const updatedSupplementList = row.supplements ? row.supplements + `\n${supplementTitle}` : supplementTitle;
                     const updatedTotalPrice = row.total_price + price;
-                    db.run('UPDATE orders SET supplements = ?, total_price = ? WHERE id = ?', [updatedSupplementList, updatedTotalPrice, row.id], (updateErr) => {
+                    db.run('UPDATE orders SET supplements = ?, total_price = ? WHERE id = ?', 
+                        [updatedSupplementList, updatedTotalPrice, row.id], (updateErr) => {
                         if (updateErr) {
                             console.error('Error updating order:', updateErr);
                             reject(updateErr);
@@ -512,7 +412,8 @@ async function addSupplementToCart(userId, supplementTitle) {
                         }
                     });
                 } else {
-                    db.run('INSERT INTO orders (user_id, supplements, total_price) VALUES (?, ?, ?)', [userId, supplementTitle, price], (insertErr) => {
+                    db.run('INSERT INTO orders (user_id, supplements, total_price) VALUES (?, ?, ?, ?)', 
+                        [userId, supplementTitle, price], (insertErr) => {
                         if (insertErr) {
                             console.error('Error inserting new order:', insertErr);
                             reject(insertErr);
@@ -545,6 +446,14 @@ bot.onText(/🥤 · Додати додатки/, async (msg) => {
             text: item.title,
             callback_data: item.title
         }]));
+        await bot.sendMessage(msg.chat.id, '🥤 · Додатки.', {
+            reply_markup: {
+                keyboard: [
+                    ["📃 · Моє замовлення"]
+                ], 
+                resize_keyboard: true
+            }
+        });
         await bot.sendMessage(msg.chat.id, 'Обирайте нижче.', {
             reply_markup: {
                 inline_keyboard: supplements
@@ -554,7 +463,6 @@ bot.onText(/🥤 · Додати додатки/, async (msg) => {
 });
 
 
-const state = {};
 bot.onText(/🛒 · Замовити/, async (msg) => {
     const userId = msg.chat.id;
     const user = await new Promise((resolve, reject) => {
@@ -681,7 +589,7 @@ bot.onText(/🖌️ · Власна піца/, async (msg) => {
                 ]
             }
         });
-    }, 100);
+    }, 200);
 });
 
 bot.on('callback_query', async (callbackQuery) => {
@@ -772,7 +680,6 @@ bot.on('callback_query', async (callbackQuery) => {
                     bot.sendMessage(userId, 'Ваше замовлення оновлено!');
                 });
             } else {
-                // Insert new order
                 db.run('INSERT INTO orders (user_id, pizza, total_price) VALUES (?, ?, ?)', [
                     userId,
                     pizzaDescription,
@@ -816,9 +723,6 @@ bot.on('callback_query', async (callbackQuery) => {
         });
     }
 });
-
-
-
 
 
 console.log('Bot started')
