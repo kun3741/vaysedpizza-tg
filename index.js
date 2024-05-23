@@ -33,6 +33,7 @@ db.serialize(() => {
         name TEXT,
         phone_number TEXT,
         address TEXT,
+        comment TEXT,
         status TEXT
     );`);
 
@@ -117,6 +118,7 @@ function mainMenuKeyboard() {
 }
 
 bot.onText(/\/start/, async (msg) => {
+    console.log(msg.chat.id)
     const photo = './img/start.png';
     const caption = '✌️ · Вітаємо в Vaysed Pizza!\nХочете свіженьку піцулю тут і зараз? Ви у правильному місці.\nВикористовуйте меню внизу, щоб оформити замовлення.';
 
@@ -150,9 +152,8 @@ bot.onText(/◀ · Назад до меню/, async (msg) => {
 });
 
 
-const userIDs = [1473999790];
 bot.onText(/📞 · Зворотній зв'язок/, (msg) => {
-    bot.sendMessage(msg.chat.id, 'Будь ласка, введіть свій номер телефону для зворотнього дзвінка:\n(формат: +380XXXXXXXXX)', {
+    bot.sendMessage(msg.chat.id, 'Будь ласка, введіть свій номер телефону для зворотнього дзвінка:', {
         reply_markup: {
             keyboard: [
                 ["◀ · Назад до меню"]
@@ -161,44 +162,47 @@ bot.onText(/📞 · Зворотній зв'язок/, (msg) => {
         },
     });
 
-    const validatePhoneNumber = (phoneNumber) => {
-        const regex = /^\+380\d{9}$/;
-        return regex.test(phoneNumber);
-    };
-
-    const askForPhoneNumber = () => {
-        bot.once('message', (responseMsg) => {
-            if (responseMsg.chat.id === msg.chat.id && responseMsg.text) {
-                const phoneNumber = responseMsg.text;
-                if (validatePhoneNumber(phoneNumber)) {
-                    userIDs.forEach(userID => {
-                        bot.sendMessage(userID, `❗ · УВАГА!\nНадійшов запит зворотнього зв'язку.\nКористувач: @${msg.from.username}\nНомер телефону: ${phoneNumber}`);
-                    });
-
-                    bot.sendMessage(msg.chat.id, '✅ · Ваш номер телефону успішно надіслано!\nОчікуйте дзвінка від менеджера протягом 5хв.', {
-                        reply_markup: {
-                            keyboard: [
-                                ["◀ · Назад до меню"]
-                            ],
-                            resize_keyboard: true
-                        }
-                    });
-                } else {
-                    bot.sendMessage(msg.chat.id, '❌ · Введено неправильний номер телефону.\nБудь ласка, введіть номер у форматі +380XXXXXXXXX:', {
-                        reply_markup: {
-                            keyboard: [
-                                ["◀ · Назад до меню"]
-                            ],
-                            resize_keyboard: true
-                        }
-                    });
-                    askForPhoneNumber();
+    bot.once('message', async (responseMsg) => {
+        if (responseMsg.chat.id === msg.chat.id && responseMsg.text) {
+            const phoneNumber = responseMsg.text;
+            const phoneRegex = /^\+380\d{9}$/;
+            if (!phoneRegex.test(phoneNumber)) {
+                await bot.sendMessage(msg.chat.id, 'Невірний формат номера телефону. Введіть номер у форматі: +380987654321');
+                return;
+            }
+            const groupId = -1002245930728;
+            const messageText = `❗ · УВАГА!\nНадійшов запит зворотнього зв'язку.\nКористувач: @${msg.from.username}\nID: ${msg.chat.id}\nНомер телефону: ${phoneNumber}`;
+            
+            await bot.sendMessage(groupId, messageText, {
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: 'Прийняти запит', callback_data: `accept_${msg.from.id}_${phoneNumber}` }
+                    ]]
                 }
+            });
+
+            await bot.sendMessage(msg.chat.id, '✅ · Ваш номер телефону успішно надіслано!');
+        }
+    });
+});
+
+bot.on('callback_query', async (callbackQuery) => {
+    const data = callbackQuery.data;
+    const [action, userId, phoneNumber] = data.split('_');
+    if (action === 'accept') {
+        const managerUsername = callbackQuery.from.username;
+        const managerId = callbackQuery.from.id;
+
+        await bot.sendMessage(userId, `📞 · Ваш запит зворотнього зв'язку прийнято менеджером @${managerUsername}. Очікуйте дзвінка.`);
+        await bot.sendMessage(managerId, `📞 · Ви прийняли запит зворотнього зв'язку.\nНомер телефону користувача: ${phoneNumber}`);
+        await bot.editMessageText(`✅ · Запит зворотнього зв'язку прийнятий менеджером @${managerUsername}.\nID користувача: ${userId}`, {
+            chat_id: callbackQuery.message.chat.id,
+            message_id: callbackQuery.message.message_id,
+            reply_markup: {
+                inline_keyboard: []
             }
         });
-    };
-
-    askForPhoneNumber();
+    }
 });
 
 
