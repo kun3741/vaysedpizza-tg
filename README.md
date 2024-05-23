@@ -3,7 +3,7 @@
 
 **An interesting Telegram chat-bot for ordering pizza.**
 
-![Screenshot](https://srv2.imgonline.com.ua/result_img/imgonline-com-ua-Resize-eeDi12vvxOK54X.png)
+![Screenshot](https://vaysed.trolling.today/phrye1dr.png)
 
 Bot mainally created as an exam project for King Danylo University, but, actually, can used for some other things. Writed with **JavaScript**, using NodeJS libary **node-telegram-bot-api**, and **sqlite3** for databases.
 
@@ -18,6 +18,8 @@ Using this bot as a common user, you can choose what you want to order:
   - Mexican
   - Carbonara
   - Sea
+  - ![Screenshot](https://vaysed.trolling.today/2v86a9g4.png)
+    
 - **Self pizza (handmade, using proposed options for fillings):**
   - Tomato sauce
   - Cream sauce
@@ -30,6 +32,7 @@ Using this bot as a common user, you can choose what you want to order:
   - Pickled corn
   - Onion
   - Bell pepper
+  - ![Screenshot](https://vaysed.trolling.today/zgh0f6xh.png)
 
 Also, when user makes an order, bot propose to choose some **attachments to order:**
  - Carbonated water
@@ -39,6 +42,7 @@ Also, when user makes an order, bot propose to choose some **attachments to orde
  - Multifruit juice
  - Tomato juice
  - Banana juice
+ - ![Screenshot](https://vaysed.trolling.today/ejm4y5j7.png)
 
 All aforementioned things saving in database **db.db**, from which the bot conveniently uses them in further work.
 Also bot saving information about **user address, name and phone number**, for future ease of input.
