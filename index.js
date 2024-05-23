@@ -153,37 +153,45 @@ bot.onText(/◀ · Назад до меню/, async (msg) => {
 
 
 bot.onText(/📞 · Зворотній зв'язок/, (msg) => {
-    bot.sendMessage(msg.chat.id, 'Будь ласка, введіть свій номер телефону для зворотнього дзвінка:', {
-        reply_markup: {
-            keyboard: [
-                ["◀ · Назад до меню"]
-            ],
-            resize_keyboard: true
-        },
-    });
+    const askForPhoneNumber = async (chatId) => {
+        await bot.sendMessage(chatId, 'Будь ласка, введіть свій номер телефону для зворотнього дзвінка:\n(формат: +380987654321)', {
+            reply_markup: {
+                keyboard: [
+                    ["◀ · Назад до меню"]
+                ],
+                resize_keyboard: true
+            },
+        });
 
-    bot.once('message', async (responseMsg) => {
-        if (responseMsg.chat.id === msg.chat.id && responseMsg.text) {
-            const phoneNumber = responseMsg.text;
-            const phoneRegex = /^\+380\d{9}$/;
-            if (!phoneRegex.test(phoneNumber)) {
-                await bot.sendMessage(msg.chat.id, 'Невірний формат номера телефону. Введіть номер у форматі: +380987654321');
-                return;
-            }
-            const groupId = -1002245930728;
-            const messageText = `❗ · УВАГА!\nНадійшов запит зворотнього зв'язку.\nКористувач: @${msg.from.username}\nID: ${msg.chat.id}\nНомер телефону: ${phoneNumber}`;
-            
-            await bot.sendMessage(groupId, messageText, {
-                reply_markup: {
-                    inline_keyboard: [[
-                        { text: 'Прийняти запит', callback_data: `accept_${msg.from.id}_${phoneNumber}` }
-                    ]]
+        bot.once('message', async (responseMsg) => {
+            if (responseMsg.chat.id === chatId && responseMsg.text) {
+                const phoneNumber = responseMsg.text;
+                const phoneRegex = /^\+380\d{9}$/;
+                if (!phoneRegex.test(phoneNumber)) {
+                    bot.sendMessage(chatId, 'Невірний формат номера телефону.');
+                    await setTimeout(() => {
+                        askForPhoneNumber(chatId);
+                    }, 100);
+                    return;
                 }
-            });
 
-            await bot.sendMessage(msg.chat.id, '✅ · Ваш номер телефону успішно надіслано!');
-        }
-    });
+                const groupId = -1002245930728;
+                const messageText = `❗ · УВАГА!\nНадійшов запит зворотнього зв'язку.\nКористувач: @${msg.from.username}\nID: ${msg.chat.id}\nНомер телефону: ${phoneNumber}`;
+                
+                await bot.sendMessage(groupId, messageText, {
+                    reply_markup: {
+                        inline_keyboard: [[
+                            { text: 'Прийняти запит', callback_data: `accept_${msg.from.id}_${phoneNumber}` }
+                        ]]
+                    }
+                });
+
+                await bot.sendMessage(chatId, '✅ · Запит успішно надіслано!');
+            }
+        });
+    };
+
+    askForPhoneNumber(msg.chat.id);
 });
 
 bot.on('callback_query', async (callbackQuery) => {
