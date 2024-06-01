@@ -76,4 +76,4 @@ You can find information about how to get this key, which names **token**, [here
 
 
 ## 👤 About developers
-**Project made by first-year students of King Danylo University, specialization «121 - Software Engineering», Volodymyr Dedeliuk, Vasyl Humeniak, Maria Smalukh, Evgen Romanovych.**
+**Project made by first-year student of King Danylo University, specialization «121 - Software Engineering», Volodymyr Dedeliuk.**
